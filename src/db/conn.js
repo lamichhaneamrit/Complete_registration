@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
-
-mongoose.connect("mongodb://localhost:27017/test1", {
-    useNewUrlParser: true,
+module.exports = {
+    MONGODB_URL: `mongodb+srv://Amrit:Amrit123@database.91cgx.mongodb.net/test1`,
+  useNewUrlParser: true,
     useUnifiedTopology: true,
     useCreateIndex: true
 
@@ -9,4 +9,5 @@ mongoose.connect("mongodb://localhost:27017/test1", {
     console.log('connection successfull');
 }).catch((e) => {
     console.log('connection not successfull');
-})
+});
+
