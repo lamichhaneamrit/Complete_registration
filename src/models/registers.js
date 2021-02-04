@@ -1,6 +1,50 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const formidable = require("formidable");
+const detect = require("detect-file-type");
+const { v1: uuidv1 } = require("uuid");
+const fs = require("fs");
+
+
+/*#########may be new code with formidable here###########
+
+module.exports = async(req, res, next) => {
+
+    const register = new formidable.IncomingForm()
+    register.parse(req, (err, fields, files) => {
+
+        if (err) { return res.send("there is some error in your file ") }
+        detect.fromFile(files.upload.path, (err, result) => {
+            //console.log(result.ext)
+
+            const fileName = uuidv1() + "." + result.ext;
+            const allowedImagesTypes = ["jpg", "jpeg", "png"]
+            if (!allowedImagesTypes.includes(result.ext)) {
+                return res.send("Images not Allowed");
+            }
+
+
+        })
+        const oldPath = files.upload.path
+        const newPath = path.join(__dirname, "uploads", fileName);
+        fs.rename(oldPath, newPath, err => {
+            if (err) { console.log("cannot be moved!Something is wrong"); return }
+
+            const Register = { "firstname": "fields.firstname", "lastname": "fields.lastname", "email": "fields.email", "password": "fields.password", "confirmpassword": "fields.confirmpassword", "phone": "phone", "Gewerbeschein": "fields.fileName" };
+            db.collection("registers").insertOne(register, (err, dbResponse) => {
+                if (err) { return res.send("mongo cannot create error") }
+
+            })
+
+        })
+
+    })
+
+}
+
+*/
+
 // schema storage
 const forkliftSchema = new mongoose.Schema({
     firstname: {
@@ -50,7 +94,7 @@ const forkliftSchema = new mongoose.Schema({
 
 })
 
-//genertaing Tokens defining token
+// //genertaing Tokens defining token
 forkliftSchema.methods.generateAuthToken = async function() {
     try {
 
