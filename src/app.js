@@ -8,9 +8,10 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const auth = require("./middleware/auth");
-
+//###########################################
+//Configure database 
 require("./db/conn");
-const Register = require("./models/registers");
+
 
 const port = process.env.PORT || 3000;
 
@@ -22,79 +23,86 @@ const partials_path = path.join(__dirname, "../templates/partials");
 //app.use(express.static(static_path));
 
 
-
-
-
-
+//####################################
+//set view engine to handlebars
 
 app.engine('handlebars', exphbs({ defaultLayout: 'main' }));
 app.set("view engine", "hbs");
 app.set("views", template_path);
 hbs.registerPartials(partials_path);
 
-
+//#############################
+// Express 
 app.use(express.json());
+//################################
 //cookie-parser as middelware
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: false }));
+
+//######################
+//getting requests from landing page 
 app.get("/", (req, res) => {
     res.render("index")
 });
+//##########################################
+//Get request from  login page
 app.get("/login", (req, res) => {
     res.render("login")
 });
-
+//##########################################
+//Get request from  Dashboard page 
 app.get("/dashboard", auth, (req, res) => {
     res.render("dashboard")
 });
+
+//######################################
+// Get request for registration page 
 app.get("/register", (req, res) => {
     res.render("register");
 
 })
 
+//##############################Register is defined here 
+const Register = require("./models/registers");
+
+
 app.post("/register", async(req, res) => {
-        try {
+    try {
 
-            const password = req.body.password;
-            const cpassword = req.body.confirmpassword;
-
-
-            if (password === cpassword) {
-
-                const forklift = new Register({
-                    firstname: req.body.firstname,
-                    lastname: req.body.lastname,
-                    email: req.body.email,
-                    password: req.body.password,
-                    confirmpassword: cpassword,
-                    phone: req.body.phone,
-                    upload: req.body.upload,
-                    company: req.body.company
-                })
+        const password = fields.password;
+        const cpassword = fields.confirmpassword;
 
 
-                //generate token
-                const token = await forklift.generateAuthToken();
-                //cookiess //
-                res.cookie("jwt", token, {
-                    expires: new Date(Date.now() + 30000 * 60),
-                    httpOnly: true
-                });
-                //res.cookie(name,value ,[options])
+        if (password === cpassword) {
+
+            const Register = { "firstname": "fields.firstname", "lastname": "fields.lastname", "email": "fields.email", "password": "fields.password", "confirmpassword": "fields.confirmpassword", "phone": "phone", "Gewerbeschein": "fields.fileName" };
 
 
-                const registered = await forklift.save();
 
-                res.status(201).render("login");
+            //generate token
+            const token = await forklift.generateAuthToken();
+            //cookiess //
+            res.cookie("jwt", token, {
+                expires: new Date(Date.now() + 30000 * 60),
+                httpOnly: true
+            });
+            //res.cookie(name,value ,[options])
 
-            } else {
-                res.send("password must match");
-            }
-        } catch (error) {
-            res.status(400).send(error);
+
+            const registered = await forklift.save();
+
+            res.status(201).render("login");
+
+        } else {
+            res.send("password must match");
         }
-    })
-    // login validation
+    } catch (error) {
+        res.status(400).send(error);
+    }
+})
+
+//#############################
+// Post login  page after registrtaion 
 app.post("/login", async(req, res) => {
     try {
 
@@ -105,7 +113,8 @@ app.post("/login", async(req, res) => {
 
         const isMatch = await bcrypt.compare(password, useremail.password);
 
-
+        //######################################################################
+        //create token and generate authorization
         const token = await useremail.generateAuthToken();
         //jwt sent via cookies also called after login 
         res.cookie("jwt", token, {
@@ -164,7 +173,8 @@ createToken();
 
 
 
-
+//#######################################
+//listen the server
 
 app.listen(port, () => {
     console.log(`Server is running at port no ${port}`);
