@@ -1,26 +1,30 @@
-require("dotenv").config();
 const express = require("express");
 const exphbs = require("express-handlebars");
 const path = require("path");
 const hbs = require("hbs");
-const app = express();
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
+
 const cookieParser = require("cookie-parser");
-const auth = require("./middleware/auth");
 const formidable = require("formidable");
 const fs = require("fs");
 
 require("./db/conn");
 const UserSchema = require("./models/users");
-
+const auth = require("./middleware/auth");
 const port = process.env.PORT || 3000;
 
 const static_path = path.join(__dirname, "../public");
 const template_path = path.join(__dirname, "../templates/views");
 const partials_path = path.join(__dirname, "../templates/partials");
 
+require("dotenv").config();
+const jwt = require("jsonwebtoken");
+const sgMail = require("@sendgrid/mail");
+const HttpError = require("./models/http-error");
+const bcrypt = require("bcrypt");
+
 //app.use(express.static(static_path));
+
+const app = express();
 
 app.engine("handlebars", exphbs({ defaultLayout: "main" }));
 app.set("view engine", "hbs");
@@ -133,42 +137,206 @@ const createToken = async() => {
 createToken();
 
 */
-app.post("/signup", (req, res, next) => {
+app.post("/signup", async (req, res, next) => {
   let form = new formidable.IncomingForm();
   form.keepExtensions = true;
 
-  form.parse(req, (err, fields, files) => {
+  form.parse(req, async (err, fields, files) => {
     if (err) {
       return res.status(400).json({
         error: "Image cannot be uploaded",
       });
     }
 
-    // const {
-    //   firstname,
-    //   lastname,
-    //   email,
-    //   password,
-    //   confirmpassword,
-    //   phone,
-    //   company,
-    // } = fields;
+    const {
+      firstname,
+      lastname,
+      email,
+      password,
+      confirmpassword,
+      phone,
+      company,
+    } = fields;
 
-    let newUser = new UserSchema(fields);
+    let existingUser;
+    try {
+      existingUser = await UserSchema.findOne({ email });
+    } catch (err) {
+      const error = new HttpError("finding email failed, try again later", 500);
+      return next(error);
+    }
 
+    if (existingUser) {
+      const error = new HttpError(
+        " email already exist , verify email or login",
+        422
+      );
+      return next(error);
+    }
+    let hashedPassword;
+    try {
+      hashedPassword = await bcrypt.hash(password, 10);
+    } catch (err) {
+      const error = new HttpError("hashing password failed", 500);
+      return next(error);
+    }
+
+    let newUser = new UserSchema({
+      ...fields,
+      password: hashedPassword,
+    });
+    let attatchment;
+    let attatchmentType;
     if (files.userFiles) {
       newUser.userFiles.data = fs.readFileSync(files.userFiles.path);
+      attatchment = fs.readFileSync(files.userFiles.path);
       newUser.userFiles.contentType = files.userFiles.type;
+      attatchmentType = files.userFiles.type;
     }
     // .then((data) => res.status(201).json({ newUser }))
-    newUser
-      .save()
+    newUser.save().catch((err) => console.log(err));
 
-      .catch((err) => console.log(err));
+    let emailToken;
+    try {
+      //emailId:emailId
+      emailToken = await jwt.sign({ email }, "shhhhared-secret", {
+        expiresIn: 12000,
+      });
+    } catch (err) {
+      throw new Error("signing jwt token failed");
+    }
 
-    res.status(201).json({ newUser });
+    const url = `http://localhost:3000/emailConfirmation/${emailToken}`;
+
+    // let adminEmailID;
+    // try {
+    //   adminEmailID = await UserSchema.findOne({ role: 1 });
+    // } catch (err) {
+    //   const error = new HttpError("finding admin  failed", 500);
+    //   return next(error);
+    // }
+    // if (!adminEmailID) {
+    //   const error = new HttpError(
+    //     "admin not found, create an admin first",
+    //     500
+    //   );
+    //   return next(error);
+    // }
+
+    // const msg = {
+    //   to: `${adminEmailID}`, // admin email id
+    //   from: "votingSystem.ajefunmi@gmail.com", // Change to your verified sender
+    //   subject: `activate  email for ${email}`,
+    //   text: "click verify to verify your email",
+    //   html: ` <a href=${url}>Verify</a>`,
+    //   attatchments: [
+    //   {
+    //     content: attatchment,
+    //     // filename :"attatchment",
+    //     type:attatchmentType
+    //   }
+    // ]
+    // };
+
+    // sgMail
+    //   .send(msg)
+    //   .then(() => {
+    //     console.log("Email sent");
+    //   })
+    //   .catch((error) => {
+    //     console.error(error);
+    //   });
+
+    res.status(201).json({
+      newUser,
+      success: true,
+      message: "User has been successfully created but not activated",
+    });
+
+    // res.status(201).json({ newUser });
   });
 });
+//admin email id is testing.projectswithdev
+//needs to be changed later
+//sendgrid email is votingSystem....
+//it also needs to be changed later
+
+// const signup = async (req, res, next) => {
+//   const { firstName, emailID, password } = req.body;
+
+//   let existingUser;
+//   try {
+//     existingUser = await User.findOne({ emailID });
+//   } catch (err) {
+//     const error = new HttpError("finding email failed, try again later", 500);
+//     return next(error);
+//   }
+
+//   if (existingUser) {
+//     const error = new HttpError(
+//       " email already exist , verify email or login",
+//       422
+//     );
+//     return next(error);
+//   }
+
+//   let emailToken;
+//   try {
+//     //emailId:emailId
+//     emailToken = await jwt.sign({ emailID }, "shhhhared-secret", {
+//       expiresIn: 12000,
+//     });
+//   } catch (err) {
+//     throw new Error("signing jwt token failed");
+//   }
+//   let hashedPassword;
+//   try {
+//     hashedPassword = await bcrypt.hash(password, 10);
+//   } catch (err) {
+//     const error = new HttpError("hashing password failed", 500);
+//     return next(error);
+//   }
+
+//   const newUser = new User({
+//     firstName: firstName,
+//     emailID: emailID,
+//     password: hashedPassword,
+//   });
+//   //const newUser = new User(req.body)
+
+//   try {
+//     await newUser.save();
+//   } catch (err) {
+//     console.log(err);
+//     return next(err);
+//   }
+
+//   const url = `http://localhost:5000/emailConfirmation/${emailToken}`;
+//   // const url = `http://localhost:3000/emailConfirmation/${emailToken}`;
+
+//   const msg = {
+//     to: `${emailID}`, // Change to your recipient
+//     from: "votingSystem.ajefunmi@gmail.com", // Change to your verified sender
+//     subject: "activate your email for votingSystem",
+//     text: "click verify to verify your email",
+//     html: ` <a href=${url}>Verify</a>`,
+//   };
+
+//   sgMail
+//     .send(msg)
+//     .then(() => {
+//       console.log("Email sent");
+//     })
+//     .catch((error) => {
+//       console.error(error);
+//     });
+
+//   res.json({
+//     newUser,
+//     success: true,
+//     message: "User has been successfully created but not activated",
+//   });
+// };
 
 app.listen(port, () => {
   console.log(`Server is running at port no ${port}`);

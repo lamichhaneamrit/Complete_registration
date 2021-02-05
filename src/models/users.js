@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
+// const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 // schema storage
 const userSchema = new mongoose.Schema({
@@ -46,6 +46,10 @@ const userSchema = new mongoose.Schema({
   userFiles: {
     data: Buffer,
     contentType: String,
+  },
+  role: {
+    type: Number,
+    default: 0,
   },
   // tokens: [{
   //     token: {
