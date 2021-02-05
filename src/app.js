@@ -160,10 +160,10 @@ app.post("/signup", (req, res, next) => {
       newUser.userFiles.data = fs.readFileSync(files.userFiles.path);
       newUser.userFiles.contentType = files.userFiles.type;
     }
-
+    // .then((data) => res.status(201).json({ newUser }))
     newUser
       .save()
-      .then((data) => res.status(201).json({ newUser }))
+
       .catch((err) => console.log(err));
 
     res.status(201).json({ newUser });
