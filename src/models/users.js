@@ -44,6 +44,7 @@ const userSchema = new mongoose.Schema({
     default: false,
   },
   userFiles: {
+    // required: true,
     data: Buffer,
     contentType: String,
   },

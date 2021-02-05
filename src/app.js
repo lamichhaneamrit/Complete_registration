@@ -18,11 +18,9 @@ const partials_path = path.join(__dirname, "../templates/partials");
 
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
-const sgMail = require("@sendgrid/mail");
+
 const HttpError = require("./models/http-error");
 const bcrypt = require("bcrypt");
-
-//app.use(express.static(static_path));
 
 const app = express();
 
@@ -158,21 +156,21 @@ app.post("/signup", async (req, res, next) => {
       company,
     } = fields;
 
-    let existingUser;
-    try {
-      existingUser = await UserSchema.findOne({ email });
-    } catch (err) {
-      const error = new HttpError("finding email failed, try again later", 500);
-      return next(error);
-    }
+    // let existingUser;
+    // try {
+    //   existingUser = await UserSchema.findOne({ email });
+    // } catch (err) {
+    //   const error = new HttpError("finding email failed, try again later", 500);
+    //   return next(error);
+    // }
 
-    if (existingUser) {
-      const error = new HttpError(
-        " email already exist , verify email or login",
-        422
-      );
-      return next(error);
-    }
+    // if (existingUser) {
+    //   const error = new HttpError(
+    //     " email already exist , verify email or login",
+    //     422
+    //   );
+    //   return next(error);
+    // }
     let hashedPassword;
     try {
       hashedPassword = await bcrypt.hash(password, 10);
@@ -184,6 +182,7 @@ app.post("/signup", async (req, res, next) => {
     let newUser = new UserSchema({
       ...fields,
       password: hashedPassword,
+      confirmpassword: hashedPassword,
     });
     let attatchment;
     let attatchmentType;
@@ -196,70 +195,9 @@ app.post("/signup", async (req, res, next) => {
     // .then((data) => res.status(201).json({ newUser }))
     newUser.save().catch((err) => console.log(err));
 
-    let emailToken;
-    try {
-      //emailId:emailId
-      emailToken = await jwt.sign({ email }, "shhhhared-secret", {
-        expiresIn: 12000,
-      });
-    } catch (err) {
-      throw new Error("signing jwt token failed");
-    }
-
-    const url = `http://localhost:3000/emailConfirmation/${emailToken}`;
-
-    // let adminEmailID;
-    // try {
-    //   adminEmailID = await UserSchema.findOne({ role: 1 });
-    // } catch (err) {
-    //   const error = new HttpError("finding admin  failed", 500);
-    //   return next(error);
-    // }
-    // if (!adminEmailID) {
-    //   const error = new HttpError(
-    //     "admin not found, create an admin first",
-    //     500
-    //   );
-    //   return next(error);
-    // }
-
-    // const msg = {
-    //   to: `${adminEmailID}`, // admin email id
-    //   from: "votingSystem.ajefunmi@gmail.com", // Change to your verified sender
-    //   subject: `activate  email for ${email}`,
-    //   text: "click verify to verify your email",
-    //   html: ` <a href=${url}>Verify</a>`,
-    //   attatchments: [
-    //   {
-    //     content: attatchment,
-    //     // filename :"attatchment",
-    //     type:attatchmentType
-    //   }
-    // ]
-    // };
-
-    // sgMail
-    //   .send(msg)
-    //   .then(() => {
-    //     console.log("Email sent");
-    //   })
-    //   .catch((error) => {
-    //     console.error(error);
-    //   });
-
-    res.status(201).json({
-      newUser,
-      success: true,
-      message: "User has been successfully created but not activated",
-    });
-
-    // res.status(201).json({ newUser });
+    res.status(201).json({ newUser });
   });
 });
-//admin email id is testing.projectswithdev
-//needs to be changed later
-//sendgrid email is votingSystem....
-//it also needs to be changed later
 
 // const signup = async (req, res, next) => {
 //   const { firstName, emailID, password } = req.body;
